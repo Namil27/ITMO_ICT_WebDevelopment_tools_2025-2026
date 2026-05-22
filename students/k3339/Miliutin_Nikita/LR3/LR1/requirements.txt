@@ -1,0 +1,13 @@
+alembic==1.16.1
+celery==5.5.3
+email-validator==2.2.0
+fastapi==0.115.12
+httpx==0.28.1
+psycopg2-binary==2.9.10
+pydantic==2.11.5
+python-jose==3.5.0
+python-multipart==0.0.20
+pwdlib[argon2]==0.2.1
+redis==6.2.0
+sqlalchemy==2.0.41
+uvicorn[standard]==0.34.2

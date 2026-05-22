@@ -1,0 +1,50 @@
+import asyncio
+import time
+
+TOTAL = 100_000_000
+NUM_TASKS = 4
+
+
+async def calculate_sum(start, end):
+    local_sum = 0
+
+    for i in range(start, end + 1):
+        local_sum += i
+
+    return local_sum
+
+
+async def main():
+
+    tasks = []
+
+    chunk_size = TOTAL // NUM_TASKS
+
+    for i in range(NUM_TASKS):
+
+        start_num = i * chunk_size + 1
+
+        if i == NUM_TASKS - 1:
+            end_num = TOTAL
+        else:
+            end_num = (i + 1) * chunk_size
+
+        tasks.append(
+            asyncio.create_task(
+                calculate_sum(start_num, end_num)
+            )
+        )
+
+    results = await asyncio.gather(*tasks)
+
+    return sum(results)
+
+
+start_time = time.time()
+
+result = asyncio.run(main())
+
+end_time = time.time()
+
+print("Async result:", result)
+print("Time:", end_time - start_time)

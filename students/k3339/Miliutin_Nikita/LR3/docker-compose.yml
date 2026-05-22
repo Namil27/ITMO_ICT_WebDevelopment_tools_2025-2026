@@ -1,0 +1,75 @@
+services:
+  db:
+    image: postgres:16
+    container_name: lr3_bookcrossing_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: bookcrossing_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d bookcrossing_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  parser:
+    build:
+      context: ./parser_service
+    container_name: lr3_parser
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8001:8001"
+
+  redis:
+    image: redis:7
+    container_name: lr3_redis
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"
+
+  api:
+    build:
+      context: ./LR1
+    container_name: lr3_bookcrossing_api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/bookcrossing_db
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      PARSER_SERVICE_URL: http://parser:8001/parse
+    depends_on:
+      db:
+        condition: service_healthy
+      parser:
+        condition: service_started
+      redis:
+        condition: service_started
+    ports:
+      - "127.0.0.1:8000:8000"
+
+  worker:
+    build:
+      context: ./LR1
+    container_name: lr3_celery_worker
+    restart: unless-stopped
+    command: celery -A src.celery_app.celery_app worker --loglevel=info
+    environment:
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@db:5432/bookcrossing_db
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      PARSER_SERVICE_URL: http://parser:8001/parse
+    depends_on:
+      db:
+        condition: service_healthy
+      parser:
+        condition: service_started
+      redis:
+        condition: service_started
+
+volumes:
+  postgres_data:
